@@ -1,0 +1,9 @@
+
+{
+  "name": "Avanya VMS AI",
+  "description": "A secure, AI-powered Visitor Management System for Government of India offices, enabling citizens to pre-register for appointments and providing robust tracking and security features for officials.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
