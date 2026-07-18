@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Photo & Document Test</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .test-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+    .photo-test { display: flex; gap: 20px; flex-wrap: wrap; }
+    .photo-item { border: 1px solid #ddd; padding: 10px; border-radius: 4px; }
+    img { max-width: 300px; max-height: 300px; object-fit: contain; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .loading { background: #d1ecf1; color: #0c5460; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Photo & Document Upload Test</h1>
+    
+    <div class="test-section">
+      <h2>Direct Photo URLs (From Database)</h2>
+      <div id="directPhotos" class="photo-test"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Direct Document URLs</h2>
+      <div id="directDocs" class="photo-test"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>FTP Proxy URLs (/ftp/files/...)</h2>
+      <div id="proxiedPhotos" class="photo-test"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3001';
+
+    async function testPhotos() {
+      try {
+        // Fetch pending appointments to get photo URLs
+        const response = await fetch(`${API_URL}/admin/appointments/pending`);
+        const appointments = await response.json();
+        
+        console.log('Appointments:', appointments);
+
+        const directPhotos = document.getElementById('directPhotos');
+        const proxiedPhotos = document.getElementById('proxiedPhotos');
+        const directDocs = document.getElementById('directDocs');
+
+        appointments.slice(0, 5).forEach(apt => {
+          if (apt.visitor_photo_url) {
+            // Direct URL test
+            const directDiv = document.createElement('div');
+            directDiv.className = 'photo-item';
+            directDiv.innerHTML = `
+              <p>${apt.visitor_name}</p>
+              <p style="font-size: 12px; color: #666;">${apt.visitor_photo_url}</p>
+              <img src="${apt.visitor_photo_url}" 
+                   onload="this.parentElement.classList.add('success'); this.title='Loaded'"
+                   onerror="this.parentElement.classList.add('error'); this.title='Failed'" 
+                   alt="Photo">
+            `;
+            directPhotos.appendChild(directDiv);
+
+            // Proxied URL test
+            let proxyUrl = apt.visitor_photo_url;
+            if (proxyUrl.startsWith('/vms/')) {
+              proxyUrl = `${API_URL}/ftp/files${proxyUrl}`;
+            }
+            
+            const proxyDiv = document.createElement('div');
+            proxyDiv.className = 'photo-item';
+            proxyDiv.innerHTML = `
+              <p>${apt.visitor_name}</p>
+              <p style="font-size: 12px; color: #666; word-break: break-all;">${proxyUrl}</p>
+              <img src="${proxyUrl}" 
+                   onload="this.parentElement.classList.add('success'); this.title='Loaded'"
+                   onerror="this.parentElement.classList.add('error'); this.title='Failed'"
+                   alt="Photo via Proxy">
+            `;
+            proxiedPhotos.appendChild(proxyDiv);
+          }
+
+          if (apt.document_url) {
+            let docUrl = apt.document_url;
+            if (docUrl.startsWith('/vms/')) {
+              docUrl = `${API_URL}/ftp/files${docUrl}`;
+            }
+            
+            const docDiv = document.createElement('div');
+            docDiv.className = 'photo-item';
+            docDiv.innerHTML = `
+              <p>${apt.visitor_name}</p>
+              <p style="font-size: 12px; color: #666; word-break: break-all;">${apt.document_url}</p>
+              <img src="${docUrl}" 
+                   style="max-height: 200px;"
+                   onload="this.parentElement.classList.add('success'); this.title='Loaded'"
+                   onerror="this.parentElement.classList.add('error'); this.title='Failed'"
+                   alt="Document">
+            `;
+            directDocs.appendChild(docDiv);
+          }
+        });
+
+      } catch (err) {
+        console.error('Error:', err);
+        document.body.innerHTML += `<div class="test-section error"><strong>Error:</strong> ${err.message}</div>`;
+      }
+    }
+
+    testPhotos();
+  </script>
+</body>
+</html>
